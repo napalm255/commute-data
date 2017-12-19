@@ -60,9 +60,11 @@ def handler(event, context):
 
     with CONNECTION.cursor() as cursor:
         # check if database exists
-        cursor.execute(('select * from %s where origin=%s and destination=%s'
-                        ' and timestamp between %s and %s'),
-                       table_name, origin, destination, start_date, end_date)
+        sql = ('select * from %s'
+               ' where origin=%s and destination=%s'
+               ' and timestamp between %s and %s') % (table_name, origin, destination,
+                                                      start_date, end_date)
+        cursor.execute(sql)
         recs = cursor.fetchall()
         logging.info(recs)
         results = {"x_axis": {'type': 'datetime'},
