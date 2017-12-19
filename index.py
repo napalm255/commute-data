@@ -49,7 +49,7 @@ def handler(event, context):
                 rec['origin'], rec['destination'])
             value = int(rec['duration_in_traffic']) / 60
             timestamp = rec['timestamp']
-            results['series'][0]['data'].append([timestamp, value])
+            results['series'][0]['data'].append([rec['id'], timestamp, value])
 
     return {'statusCode': 200,
             'body': json.dumps(results),
