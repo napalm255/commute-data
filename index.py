@@ -6,8 +6,8 @@ import sys
 import logging
 import os
 import json
-from collections import OrderedDict
 import pymysql
+from pymysql.cursors import DictCursor
 
 
 try:
@@ -18,7 +18,8 @@ try:
     CONNECTION = pymysql.connect(host=DATA['db_host'],
                                  user=DATA['db_user'],
                                  password=DATA['db_pass'],
-                                 db=DATA['db_name'])
+                                 db=DATA['db_name'],
+                                 cursorclass=DictCursor)
     logging.info('Successfully connected to MySql.')
 except:
     logging.error('Unexpected error: could not connect to MySql.')
