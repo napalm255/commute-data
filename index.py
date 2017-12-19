@@ -41,10 +41,17 @@ def handler(event, context):
         cursor.execute('select * from %s' % (table_name))
         recs = cursor.fetchall()
         logging.info(recs)
+        results = {"x_axis": {'type': 'datetime'},
+                   "series": [{'name': '', 'data': []}]}
+        for rec in recs:
+            results['series'][0]['name'] = '{0} -> {1}'.format(
+                rec['origin'], rec['destination'])
+            value = int(rec['duration_in_traffic']) / 60
+            timestamp = rec['timestamp']
+            results['series'][0]['data'].append([timestamp, value])
 
     return {'statusCode': 200,
-            'body': json.dumps({'status': 'OK',
-                                'records': recs}),
+            'body': json.dumps(results),
             'headers': header}
 
 
