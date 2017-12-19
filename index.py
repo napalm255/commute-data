@@ -10,6 +10,7 @@ import time
 import pymysql
 from pymysql.cursors import DictCursor
 from pytz import timezone
+from datetime import datetime, timedelta
 
 
 try:
@@ -52,10 +53,16 @@ def handler(event, context):
     origin = body['origin']
     destination = body['destination']
 
+    current_date = datetime.utcnow()
+    past_date = current_date + timedelta(-30)
+    start_date = current_date.strftime('%Y-%m-%d 00:00:00')
+    end_date = past_date.strftime('%Y-%m-%d 00:00:00')
+
     with CONNECTION.cursor() as cursor:
         # check if database exists
-        cursor.execute('select * from %s where origin=%s and destination=%s',
-                       table_name, origin, destination)
+        cursor.execute(('select * from %s where origin=%s and destination=%s'
+                        ' and timestamp between %s and %s'),
+                       table_name, origin, destination, start_date, end_date)
         recs = cursor.fetchall()
         logging.info(recs)
         results = {"x_axis": {'type': 'datetime'},
