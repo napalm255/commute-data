@@ -60,7 +60,7 @@ def handler(event, context):
             value = int(rec['duration_in_traffic']) / 60
             # timestamp = timezone('UTC').localize(rec['timestamp']).astimezone(timezone('EST'))
             timestamp = timezone('UTC').localize(rec['timestamp'])
-            timestamp = time.mktime(timestamp.timetuple())
+            timestamp = float(time.mktime(timestamp.timetuple())) * 1000
             results['series'][0]['data'].append([timestamp, value])
 
     return {'statusCode': 200,
