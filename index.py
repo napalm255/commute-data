@@ -48,9 +48,14 @@ def handler(event, context):
 
     table_name = 'traffic'
 
+    body = json.loads(event['body'])
+    origin = body['origin']
+    destination = body['destination']
+
     with CONNECTION.cursor() as cursor:
         # check if database exists
-        cursor.execute('select * from %s' % (table_name))
+        cursor.execute('select * from %s where origin=%s and destination=%s',
+                       table_name, origin, destination)
         recs = cursor.fetchall()
         logging.info(recs)
         results = {"x_axis": {'type': 'datetime'},
