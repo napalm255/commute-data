@@ -21,6 +21,7 @@ try:
                                  user=DATA['db_user'],
                                  password=DATA['db_pass'],
                                  db=DATA['db_name'],
+                                 autocommit=True,
                                  cursorclass=DictCursor)
     logging.info('Successfully connected to MySql.')
 # pylint: disable=broad-except
