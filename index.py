@@ -56,7 +56,7 @@ def handler(event, context):
     current_date = datetime.utcnow()
     past_date = current_date + timedelta(-30)
     start_date = past_date.strftime('%Y-%m-%d 00:00:00')
-    end_date = current_date.strftime('%Y-%m-%d 00:00:00')
+    end_date = current_date.strftime('%Y-%m-%d %H:%M:%S')
 
     with CONNECTION.cursor() as cursor:
         # check if database exists
