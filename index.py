@@ -21,8 +21,9 @@ try:
                                  db=DATA['db_name'],
                                  cursorclass=DictCursor)
     logging.info('Successfully connected to MySql.')
-except:
-    logging.error('Unexpected error: could not connect to MySql.')
+# pylint: disable=broad-except
+except Exception as ex:
+    logging.error('Unexpected error: could not connect to MySql. (%s)', ex)
     sys.exit()
 
 
@@ -49,7 +50,7 @@ def handler(event, context):
                 rec['origin'], rec['destination'])
             value = int(rec['duration_in_traffic']) / 60
             timestamp = rec['timestamp']
-            results['series'][0]['data'].append([timestamp, value])
+            results['series'][0]['data'].append([timestamp.strftime('%Y-%m-%d %H:%M:%S'), value])
 
     return {'statusCode': 200,
             'body': json.dumps(results),
