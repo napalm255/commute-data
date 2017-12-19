@@ -64,6 +64,7 @@ def handler(event, context):
                ' where origin=%s and destination=%s'
                ' and timestamp between %s and %s') % (table_name, origin, destination,
                                                       start_date, end_date)
+        logging.info(sql)
         cursor.execute(sql)
         recs = cursor.fetchall()
         logging.info(recs)
