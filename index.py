@@ -6,6 +6,7 @@ import sys
 import logging
 import os
 import json
+import time
 import pymysql
 from pymysql.cursors import DictCursor
 from pytz import timezone
@@ -35,9 +36,13 @@ def handler(event, context):
     logger.setLevel(logging.INFO)
     logger.info(event)
 
-    # TODO: replace wildcard
+    if 'COMMUTE_ALLOW_ORIGIN' in os.environ:
+        allow_origin = os.environ['COMMUTE_ALLOW_ORIGIN']
+    else:
+        allow_origin = '*'
+
     header = {'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Origin': allow_origin,
               'Access-Control-Allow-Methods': 'GET'}
 
     table_name = 'traffic'
@@ -54,8 +59,8 @@ def handler(event, context):
                 rec['origin'], rec['destination'])
             value = int(rec['duration_in_traffic']) / 60
             timestamp = timezone('UTC').localize(rec['timestamp']).astimezone(timezone('EST'))
-            results['series'][0]['data'].append([timestamp.strftime('%Y-%m-%d %H:%M:%S %Z%z'),
-                                                 value])
+            timestamp = time.mktime(timestamp.timetuple())
+            results['series'][0]['data'].append([timestamp, value])
 
     return {'statusCode': 200,
             'body': json.dumps(results),
