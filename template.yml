@@ -27,6 +27,10 @@ Parameters:
     Type: 'AWS::SSM::Parameter::Value<String>'
     Description: Database name
     Default: commute_database_name
+  AccessControlAllowOrigin:
+    Type: 'AWS::SSM::Parameter::Value<String>'
+    Description: Database name
+    Default: commute_allow_origin
 
 Resources:
   TrafficData:
@@ -34,6 +38,7 @@ Resources:
     Properties:
       Handler: index.handler
       Runtime: python2.7
+      Timeout: 5
       CodeUri: ./
       VpcConfig:
         SecurityGroupIds:
@@ -51,6 +56,7 @@ Resources:
           DATABASE_USER: !Ref DatabaseUser
           DATABASE_PASS: !Ref DatabasePass
           DATABASE_NAME: !Ref DatabaseName
+          COMMUTE_ALLOW_ORIGIN: !Ref AccessControlAllowOrigin
       Events:
         GetEvent:
           Type: Api
