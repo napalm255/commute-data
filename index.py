@@ -53,8 +53,9 @@ def handler(event, context):
             results['series'][0]['name'] = '{0} -> {1}'.format(
                 rec['origin'], rec['destination'])
             value = int(rec['duration_in_traffic']) / 60
-            timestamp = timezone('US/Eastern').localize(rec['timestamp'])
-            results['series'][0]['data'].append([timestamp.strftime('%Y-%m-%d %H:%M:%S'), value])
+            timestamp = timezone('UTC').localize(rec['timestamp']).astimezone(timezone('EST'))
+            results['series'][0]['data'].append([timestamp.strftime('%Y-%m-%d %H:%M:%S %Z%z'),
+                                                 value])
 
     return {'statusCode': 200,
             'body': json.dumps(results),
