@@ -8,6 +8,7 @@ import os
 import json
 import pymysql
 from pymysql.cursors import DictCursor
+from pytz import timezone
 
 
 try:
@@ -34,8 +35,10 @@ def handler(event, context):
     logger.setLevel(logging.INFO)
     logger.info(event)
 
+    # TODO: replace wildcard
     header = {'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '*'}
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Methods': 'GET'}
 
     table_name = 'traffic'
 
@@ -50,7 +53,7 @@ def handler(event, context):
             results['series'][0]['name'] = '{0} -> {1}'.format(
                 rec['origin'], rec['destination'])
             value = int(rec['duration_in_traffic']) / 60
-            timestamp = rec['timestamp']
+            timestamp = timezone('US/Eastern').localize(rec['timestamp'])
             results['series'][0]['data'].append([timestamp.strftime('%Y-%m-%d %H:%M:%S'), value])
 
     return {'statusCode': 200,
