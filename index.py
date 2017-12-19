@@ -35,7 +35,7 @@ def handler(event, context):
     logger.info(event)
 
     header = {'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': '{"description":""}'}
+              'Access-Control-Allow-Origin': '*'}
 
     table_name = 'traffic'
 
