@@ -58,7 +58,8 @@ def handler(event, context):
             results['series'][0]['name'] = '{0} -> {1}'.format(
                 rec['origin'], rec['destination'])
             value = int(rec['duration_in_traffic']) / 60
-            timestamp = timezone('UTC').localize(rec['timestamp']).astimezone(timezone('EST'))
+            # timestamp = timezone('UTC').localize(rec['timestamp']).astimezone(timezone('EST'))
+            timestamp = timezone('UTC').localize(rec['timestamp'])
             timestamp = time.mktime(timestamp.timetuple())
             results['series'][0]['data'].append([timestamp, value])
 
