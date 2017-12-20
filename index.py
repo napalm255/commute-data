@@ -45,7 +45,7 @@ def handler(event, context):
 
     header = {'Content-Type': 'application/json',
               'Access-Control-Allow-Origin': allow_origin,
-              'Access-Control-Allow-Methods': 'GET'}
+              'Access-Control-Allow-Methods': 'POST'}
 
     table_name = 'traffic'
 
