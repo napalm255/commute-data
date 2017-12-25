@@ -38,10 +38,11 @@ def handler(event, context):
     logger.setLevel(logging.INFO)
     logger.info(event)
 
-    if 'COMMUTE_ALLOW_ORIGIN' in os.environ:
-        allow_origin = os.environ['COMMUTE_ALLOW_ORIGIN']
-    else:
-        allow_origin = '*'
+    # if 'COMMUTE_ALLOW_ORIGIN' in os.environ:
+    #     allow_origin = os.environ['COMMUTE_ALLOW_ORIGIN']
+    # else:
+    #     allow_origin = '*'
+    allow_origin = '*'
 
     header = {'Content-Type': 'application/json',
               'Access-Control-Allow-Origin': allow_origin,
