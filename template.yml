@@ -63,3 +63,6 @@ Resources:
           Properties:
             Path: /
             Method: post
+            cors:
+              origins:
+                - 'https://naponline.net'
