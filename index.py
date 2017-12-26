@@ -38,6 +38,7 @@ def handler(event, context):
     logger.setLevel(logging.INFO)
     logger.info(event)
 
+    # CORS
     req_origin = event['headers']['Origin']
     allowed_origins = ['http://127.0.0.1',
                        'https://127.0.0.1',
@@ -47,12 +48,22 @@ def handler(event, context):
         allowed_origins.append(os.environ['COMMUTE_ALLOW_ORIGIN'])
     allow_origin = ','.join([req_origin for x in allowed_origins if x in req_origin])
 
+    # header
     header = {'Content-Type': 'application/json',
               'Access-Control-Allow-Origin': allow_origin,
               'Access-Control-Allow-Methods': 'POST'}
 
+    # fail early if unallowed origin
+    if not allow_origin:
+        return {'statusCode': 403,
+                'body': json.dumps({'status': 'ERROR',
+                                    'message': 'origin not allowed'}),
+                'headers': header}
+
+    # database table name
     table_name = 'traffic'
 
+    # setup vars from event
     body = json.loads(event['body'])
     origin = body['origin']
     destination = body['destination']
@@ -63,11 +74,13 @@ def handler(event, context):
     if 'type' in body:
         graph_type = body['type']
 
+    # date range
     current_date = datetime.utcnow()
-    past_date = current_date + timedelta(-30)
+    past_date = current_date + timedelta(-365)
     start_date = past_date.strftime('%Y-%m-%d 00:00:00')
     end_date = current_date.strftime('%Y-%m-%d %H:%M:%S')
 
+    # get data
     with CONNECTION.cursor() as cursor:
         # check if database exists
         sql = ('select * from %s'
