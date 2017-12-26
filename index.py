@@ -4,7 +4,6 @@
 from __future__ import print_function
 import sys
 import logging
-import os
 import json
 import time
 from datetime import datetime, timedelta
@@ -14,6 +13,10 @@ from pymysql.cursors import DictCursor
 from pytz import timezone
 import boto3
 
+
+# logging configuration
+LOGGER = logging.getLogger()
+LOGGER.setLevel(logging.DEBUG)
 
 try:
     SSM = boto3.client('ssm')
@@ -85,8 +88,6 @@ def cors(origin):
 def handler(event, context):
     """Lambda handler."""
     # pylint: disable=unused-argument, too-many-locals
-    logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
     logging.info('event: %s', event)
 
     # read event headers
