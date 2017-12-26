@@ -38,7 +38,7 @@ Resources:
     Properties:
       Handler: index.handler
       Runtime: python2.7
-      Timeout: 20
+      Timeout: 10
       CodeUri: ./
       VpcConfig:
         SecurityGroupIds:
