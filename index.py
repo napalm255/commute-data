@@ -89,7 +89,7 @@ def handler(event, context):
     # get data
     with CONNECTION.cursor() as cursor:
         # check if database exists
-        sql = ('select * from %s'
+        sql = ('select origin, destination, timestamp, duration_in_traffic from %s'
                ' where origin = "%s" and destination = "%s"'
                ' and timestamp between "%s" and "%s"') % (table_name, origin, destination,
                                                           start_date, end_date)
