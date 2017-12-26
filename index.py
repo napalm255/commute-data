@@ -34,8 +34,10 @@ except Exception as ex:
 
 def error(message, header=None, code=403):
     """Return error object."""
+    logging.info('error handler')
     if not header:
         header = {'Content-Type': 'application/json'}
+    logging.error('error: %s (%s)', message, header)
     return {'statusCode': code,
             'body': json.dumps({'status': 'ERROR',
                                 'message': message}),
@@ -44,6 +46,7 @@ def error(message, header=None, code=403):
 
 def cors(origin):
     """CORS."""
+    logging.info('cors handler')
     allowed_origins = ['http://127.0.0.1',
                        'https://127.0.0.1',
                        'http://localhost',
@@ -52,16 +55,10 @@ def cors(origin):
     if 'COMMUTE_ALLOW_ORIGIN' in os.environ:
         allowed_origins.append(os.environ['COMMUTE_ALLOW_ORIGIN'])
 
-    logging.info(allowed_origins)
-
+    logging.debug('allowed_origins: %s', allowed_origins)
     allow_origin = ','.join([origin for x in allowed_origins if x in origin])
     allow_origin = '*'
-
-    if not allow_origin:
-        result = error('invalid origin: %s' % origin)
-        logging.info(result)
-        return result
-
+    logging.debug('allow_origin: %s', allow_origin)
     return allow_origin
 
 
@@ -70,7 +67,7 @@ def handler(event, context):
     # pylint: disable=unused-argument, too-many-locals
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
-    logger.info(event)
+    logger.info('event: %s', event)
 
     # database table name
     table_name = 'traffic'
@@ -78,49 +75,66 @@ def handler(event, context):
     # read headers
     headers = dict((k.lower(), v) for k, v in event['headers'].iteritems())
 
+    # cors
+    try:
+        allow_origin = cors(headers['origin'])
+        assert allow_origin
+    except AssertionError:
+        return error('invalid origin')
+
     # header
     header = {'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': cors(headers['origin']),
+              'Access-Control-Allow-Origin': allow_origin,
               'Access-Control-Allow-Methods': 'POST'}
-    logging.info(header)
+    logging.debug('header: %s', header)
 
     # load data
-    if 'application/x-www-form-urlencoded' in headers['content-type'].lower():
+    try:
+        assert 'application/x-www-form-urlencoded' in headers['content-type'].lower()
         data = dict(parse_qsl(event['body']))
-    else:
-        result = error('invalid content-type', header)
-        logging.info(result)
-        return result
+    except AssertionError:
+        message = 'invalid content-type: %s' % headers['content-type'].lower()
+        return error(message, header)
 
     # setup vars from event
-    origin = data['origin']
-    destination = data['destination']
-    graph_name = '{0} -> {1}'.format(origin, destination)
-    graph_type = 'area'
-    if 'name' in data:
-        graph_name = data['name']
-    if 'type' in data:
-        graph_type = data['type']
+    try:
+        graph = {'org': data['origin'],
+                 'dst': data['destination'],
+                 'type': 'area',
+                 'name': '{0} -> {1}'.format(data['origin'], data['destination'])}
+        if 'name' in data:
+            graph['name'] = data['name']
+        if 'type' in data:
+            graph['type'] = data['type']
+        logging.debug('graph data: %s', graph)
+    except KeyError as ex:
+        message = 'invalid arguments (%s)' % ex
+        return error(message, header)
 
     # date range
-    current_date = datetime.utcnow()
-    past_date = current_date + timedelta(-365)
-    start_date = past_date.strftime('%Y-%m-%d 00:00:00')
-    end_date = current_date.strftime('%Y-%m-%d %H:%M:%S')
+    dates = dict()
+    dates['current'] = datetime.utcnow()
+    dates['past'] = dates['current'] + timedelta(-365)
+    dates['start'] = dates['past'].strftime('%Y-%m-%d 00:00:00')
+    dates['end'] = dates['current'].strftime('%Y-%m-%d %H:%M:%S')
+    logging.debug('dates: %s', dates)
 
     # get data
     with CONNECTION.cursor() as cursor:
-        # check if database exists
+        logging.info('database: query')
         sql = ('select origin, destination, timestamp, duration_in_traffic from %s'
                ' where origin = "%s" and destination = "%s"'
-               ' and timestamp between "%s" and "%s"') % (table_name, origin, destination,
-                                                          start_date, end_date)
-        logging.info(sql)
+               ' and timestamp between "%s" and "%s"') % (table_name,
+                                                          graph['org'], graph['dst'],
+                                                          dates['start'], dates['end'])
+        logging.debug('database: sql(%s)', sql)
+
         cursor.execute(sql)
         recs = cursor.fetchall()
-        logging.info('number of records: %s', len(recs))
+        logging.info('database: #%s records', len(recs))
+
         results = {"x_axis": {'type': 'datetime'},
-                   "series": [{'type': graph_type, 'name': graph_name, 'data': []}]}
+                   "series": [{'type': graph['type'], 'name': graph['name'], 'data': []}]}
         for rec in recs:
             value = int(rec['duration_in_traffic']) / 60
             timestamp = timezone('UTC').localize(rec['timestamp'])
