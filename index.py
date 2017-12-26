@@ -39,7 +39,8 @@ def handler(event, context):
     logger.info(event)
 
     # CORS
-    req_origin = event['headers']['Origin']
+    headers = dict((k.lower(), v) for k, v in event['headers'].iteritems())
+    req_origin = headers['origin']
     allowed_origins = ['http://127.0.0.1',
                        'https://127.0.0.1',
                        'http://localhost',
