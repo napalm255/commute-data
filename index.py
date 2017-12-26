@@ -18,21 +18,25 @@ import boto3
 try:
     SSM = boto3.client('ssm')
 
-    DATABASE = {'host': SSM.get_parameter('commute_database_host')['Parameter']['Value'],
-                'user': SSM.get_parameter('commute_database_user')['Parameter']['Value'],
-                'pass': SSM.get_parameter('commute_database_pass')['Parameter']['Value'],
-                'name': SSM.get_parameter('commute_database_name')['Parameter']['Value']}
+    PREFIX = 'commute_'
+    PARAMS = SSM.describe_parameters(ParameterFilters=[{'Key': PREFIX,
+                                                        'Option': 'BeginsWith'}])
+    DATABASE = dict()
+    for param in PARAMS['Parameters']:
+        if 'database_' in param['Name']:
+            key = param['Name'].replace('%sdatabase_' % PREFIX, '')
+            val = SSM.get_parameter(Name=param['name'])['Parameter']['Value']
+            DATABASE.update((key, val))
 
-    HEADER_PREFIX = 'commute_header_'
-    HEADER_PARAMS = SSM.describe_parameters(ParameterFilters=[{'Key': HEADER_PREFIX,
-                                                               'Option': 'BeginsWith'}])
     HEADERS = dict()
-    for param in HEADER_PARAMS['Parameters']:
-        HEADERS.update((param.name.replace(HEADER_PREFIX, ''),
-                        SSM.get_parameter(param.name)['Parameter']['Value']))
+    for param in PARAMS['Parameters']:
+        if 'header_' in param['Name']:
+            key = param['Name'].replace('%sheader_' % PREFIX, '')
+            val = SSM.get_parameter(Name=param['name'])['Parameter']['Value']
+            HEADERS.update((key, val))
 # pylint: disable=broad-except
 except Exception as ex:
-    logging.error('Unexpected error: could not connect to SSM. (%s)', ex)
+    logging.error('error: could not connect to SSM. (%s)', ex)
     sys.exit()
 
 try:
@@ -45,7 +49,7 @@ try:
     logging.info('Successfully connected to MySql.')
 # pylint: disable=broad-except
 except Exception as ex:
-    logging.error('Unexpected error: could not connect to MySql. (%s)', ex)
+    logging.error('error: could not connect to MySql. (%s)', ex)
     sys.exit()
 
 
