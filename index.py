@@ -19,21 +19,22 @@ try:
     SSM = boto3.client('ssm')
 
     PREFIX = 'commute_'
-    PARAMS = SSM.describe_parameters(ParameterFilters=[{'Key': PREFIX,
+    PARAMS = SSM.describe_parameters(ParameterFilters=[{'Key': 'Name',
+                                                        'Values': ['commute_'],
                                                         'Option': 'BeginsWith'}])
     DATABASE = dict()
     for param in PARAMS['Parameters']:
         if 'database_' in param['Name']:
             key = param['Name'].replace('%sdatabase_' % PREFIX, '')
-            val = SSM.get_parameter(Name=param['name'])['Parameter']['Value']
-            DATABASE.update((key, val))
+            val = SSM.get_parameter(Name=param['Name'])['Parameter']['Value']
+            DATABASE.update({key: val})
 
     HEADERS = dict()
     for param in PARAMS['Parameters']:
         if 'header_' in param['Name']:
             key = param['Name'].replace('%sheader_' % PREFIX, '')
-            val = SSM.get_parameter(Name=param['name'])['Parameter']['Value']
-            HEADERS.update((key, val))
+            val = SSM.get_parameter(Name=param['Name'])['Parameter']['Value']
+            HEADERS.update({key: val})
 # pylint: disable=broad-except
 except Exception as ex:
     logging.error('error: could not connect to SSM. (%s)', ex)
@@ -68,19 +69,10 @@ def error(message, header=None, code=403):
 def cors(origin):
     """CORS."""
     logging.info('cors handler')
-    allowed_origins = ['http://127.0.0.1',
-                       'https://127.0.0.1',
-                       'http://localhost',
-                       'https://localhost']
-
-    if 'COMMUTE_ALLOW_ORIGIN' in os.environ:
-        allowed_origins.append(os.environ['COMMUTE_ALLOW_ORIGIN'])
-
-    logging.debug('allowed_origins: %s', allowed_origins)
-    allow_origin = ','.join([origin for x in allowed_origins if x in origin])
-    allow_origin = '*'
-    logging.debug('allow_origin: %s', allow_origin)
-    return allow_origin
+    if origin in HEADERS['Access-Control-Allow-Origin']:
+        logging.debug('allow_origin: %s', origin)
+        return origin
+    return '*'  # temp allow all
 
 
 def handler(event, context):
@@ -91,24 +83,17 @@ def handler(event, context):
     logging.info('event: %s', event)
     logging.info(HEADERS)
 
-    # database table name
-    table_name = 'traffic'
-
-    # read headers
+    # read event headers
     headers = dict((k.lower(), v) for k, v in event['headers'].iteritems())
 
-    # cors
+    # header + cors
     try:
-        allow_origin = cors(headers['origin'])
-        assert allow_origin
+        header = dict(HEADERS)
+        header.update({'Access-Control-Allow-Origin': cors(headers['origin'])})
+        assert headers['origin'] in header['Access-Control-Allow-Origin']
+        logging.debug('header: %s', header)
     except AssertionError:
         return error('invalid origin')
-
-    # header
-    header = {'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': allow_origin,
-              'Access-Control-Allow-Methods': 'POST'}
-    logging.debug('header: %s', header)
 
     # load data
     try:
@@ -146,7 +131,7 @@ def handler(event, context):
         logging.info('database: query')
         sql = ('select origin, destination, timestamp, duration_in_traffic from %s'
                ' where origin = "%s" and destination = "%s"'
-               ' and timestamp between "%s" and "%s"') % (table_name,
+               ' and timestamp between "%s" and "%s"') % (DATABASE['table'],
                                                           graph['org'], graph['dst'],
                                                           dates['start'], dates['end'])
         logging.debug('database: sql(%s)', sql)
