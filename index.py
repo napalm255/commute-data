@@ -22,12 +22,15 @@ try:
     PARAMS = SSM.describe_parameters(ParameterFilters=[{'Key': 'Name',
                                                         'Values': ['commute_'],
                                                         'Option': 'BeginsWith'}])
+    logging.debug('ssm: parameters(%s)', PARAMS)
+
     DATABASE = dict()
     for param in PARAMS['Parameters']:
         if 'database_' in param['Name']:
             key = param['Name'].replace('%sdatabase_' % PREFIX, '')
             val = SSM.get_parameter(Name=param['Name'])['Parameter']['Value']
             DATABASE.update({key: val})
+    logging.debug('ssm: database(%s)', DATABASE)
 
     HEADERS = dict()
     for param in PARAMS['Parameters']:
@@ -35,9 +38,12 @@ try:
             key = param['Name'].replace('%sheader_' % PREFIX, '')
             val = SSM.get_parameter(Name=param['Name'])['Parameter']['Value']
             HEADERS.update({key: val})
+    logging.debug('ssm: headers(%s)', HEADERS)
+
+    logging.info('ssm: successfully gathered parameters')
 # pylint: disable=broad-except
 except Exception as ex:
-    logging.error('error: could not connect to SSM. (%s)', ex)
+    logging.error('database: could not connect to SSM. (%s)', ex)
     sys.exit()
 
 try:
@@ -47,19 +53,20 @@ try:
                                  db=DATABASE['name'],
                                  autocommit=True,
                                  cursorclass=DictCursor)
-    logging.info('Successfully connected to MySql.')
+    logging.info('database: successfully connected to mysql')
 # pylint: disable=broad-except
 except Exception as ex:
-    logging.error('error: could not connect to MySql. (%s)', ex)
+    logging.error('database: could not connect to mysql (%s)', ex)
     sys.exit()
 
 
 def error(message, header=None, code=403):
     """Return error object."""
-    logging.info('error handler')
+    logging.info('handler: error')
     if not header:
-        header = {'Content-Type': 'application/json'}
-    logging.error('error: %s (%s)', message, header)
+        header = {'Content-Type': 'application/json',
+                  'Access-Control-Allow-Origin': '*'}
+    logging.error('%s (%s)', message, header)
     return {'statusCode': code,
             'body': json.dumps({'status': 'ERROR',
                                 'message': message}),
@@ -68,7 +75,7 @@ def error(message, header=None, code=403):
 
 def cors(origin):
     """CORS."""
-    logging.info('cors handler')
+    logging.info('handler: cors')
     if origin in HEADERS['Access-Control-Allow-Origin']:
         logging.debug('allow_origin: %s', origin)
         return origin
@@ -81,7 +88,6 @@ def handler(event, context):
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
     logging.info('event: %s', event)
-    logging.info(HEADERS)
 
     # read event headers
     headers = dict((k.lower(), v) for k, v in event['headers'].iteritems())
