@@ -38,7 +38,7 @@ def handler(event, context):
     logger.setLevel(logging.INFO)
     logger.info(event)
 
-    req_origin = [event['headers']['Origin']]
+    req_origin = event['headers']['Origin']
     allowed_origins = ['http://127.0.0.1',
                        'https://127.0.0.1',
                        'http://localhost',
