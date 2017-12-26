@@ -46,8 +46,9 @@ def handler(event, context):
                        'https://localhost']
     if 'COMMUTE_ALLOW_ORIGIN' in os.environ:
         allowed_origins.append(os.environ['COMMUTE_ALLOW_ORIGIN'])
-    allow_origin = ','.join([req_origin for x in allowed_origins if x in req_origin])
     logging.info(allowed_origins)
+    allow_origin = ','.join([req_origin for x in allowed_origins if x in req_origin])
+    allow_origin = '*'
 
     # header
     header = {'Content-Type': 'application/json',
