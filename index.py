@@ -38,13 +38,13 @@ def handler(event, context):
     logger.setLevel(logging.INFO)
     logger.info(event)
 
-    req_origin = tuple(event['headers']['Origin'])
-    allowed_origins = set('http://127.0.0.1',
-                          'https://127.0.0.1',
-                          'http://localhost',
-                          'https://localhost')
+    req_origin = [event['headers']['Origin']]
+    allowed_origins = ['http://127.0.0.1',
+                       'https://127.0.0.1',
+                       'http://localhost',
+                       'https://localhost']
     if 'COMMUTE_ALLOW_ORIGIN' in os.environ:
-        allowed_origins.add(os.environ['COMMUTE_ALLOW_ORIGIN'])
+        allowed_origins.append(os.environ['COMMUTE_ALLOW_ORIGIN'])
     allow_origin = ','.join([req_origin for x in allowed_origins if x in req_origin])
 
     header = {'Content-Type': 'application/json',
