@@ -15,32 +15,25 @@ import boto3
 
 
 # logging configuration
-LOGGER = logging.getLogger()
-LOGGER.setLevel(logging.DEBUG)
+logging.getLogger().setLevel(logging.DEBUG)
 
 try:
     SSM = boto3.client('ssm')
 
-    PREFIX = 'commute_'
-    PARAMS = SSM.describe_parameters(ParameterFilters=[{'Key': 'Name',
-                                                        'Values': ['commute_'],
-                                                        'Option': 'BeginsWith'}])
+    PREFIX = '/commute'
+    PARAMS = SSM.get_parameters_by_path(Path=PREFIX, Recursive=True)
     logging.debug('ssm: parameters(%s)', PARAMS)
 
     DATABASE = dict()
-    for param in PARAMS['Parameters']:
-        if 'database_' in param['Name']:
-            key = param['Name'].replace('%sdatabase_' % PREFIX, '')
-            val = SSM.get_parameter(Name=param['Name'])['Parameter']['Value']
-            DATABASE.update({key: val})
-    logging.debug('ssm: database(%s)', DATABASE)
-
     HEADERS = dict()
     for param in PARAMS['Parameters']:
-        if 'header_' in param['Name']:
-            key = param['Name'].replace('%sheader_' % PREFIX, '')
-            val = SSM.get_parameter(Name=param['Name'])['Parameter']['Value']
-            HEADERS.update({key: val})
+        if '/database/' in param['Name']:
+            key = param['Name'].replace('%s/database/' % PREFIX, '')
+            DATABASE.update({key: param['Value']})
+        elif '/headers/' in param['Name']:
+            key = param['Name'].replace('%s/headers/' % PREFIX, '')
+            HEADERS.update({key: param['Value']})
+    logging.debug('ssm: database(%s)', DATABASE)
     logging.debug('ssm: headers(%s)', HEADERS)
 
     logging.info('ssm: successfully gathered parameters')
