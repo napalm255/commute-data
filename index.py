@@ -73,7 +73,7 @@ def handler(event, context):
         logging.info(sql)
         cursor.execute(sql)
         recs = cursor.fetchall()
-        logging.info(recs)
+        # logging.info(recs)
         results = {"x_axis": {'type': 'datetime'},
                    "series": [{'type': graph_type, 'name': graph_name, 'data': []}]}
         for rec in recs:
