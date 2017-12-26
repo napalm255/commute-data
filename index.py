@@ -8,6 +8,7 @@ import os
 import json
 import time
 from datetime import datetime, timedelta
+from urlparse import parse_qsl
 import pymysql
 from pymysql.cursors import DictCursor
 from pytz import timezone
@@ -31,6 +32,39 @@ except Exception as ex:
     sys.exit()
 
 
+def error(message, header=None, code=403):
+    """Return error object."""
+    if not header:
+        header = {'Content-Type': 'application/json'}
+    return {'statusCode': code,
+            'body': json.dumps({'status': 'ERROR',
+                                'message': message}),
+            'headers': header}
+
+
+def cors(origin):
+    """CORS."""
+    allowed_origins = ['http://127.0.0.1',
+                       'https://127.0.0.1',
+                       'http://localhost',
+                       'https://localhost']
+
+    if 'COMMUTE_ALLOW_ORIGIN' in os.environ:
+        allowed_origins.append(os.environ['COMMUTE_ALLOW_ORIGIN'])
+
+    logging.info(allowed_origins)
+
+    allow_origin = ','.join([origin for x in allowed_origins if x in origin])
+    allow_origin = '*'
+
+    if not allow_origin:
+        result = error('invalid origin: %s' % origin)
+        logging.info(result)
+        return result
+
+    return allow_origin
+
+
 def handler(event, context):
     """Lambda handler."""
     # pylint: disable=unused-argument, too-many-locals
@@ -38,47 +72,35 @@ def handler(event, context):
     logger.setLevel(logging.INFO)
     logger.info(event)
 
-    # CORS
-    headers = dict((k.lower(), v) for k, v in event['headers'].iteritems())
-    req_origin = headers['origin']
-    allowed_origins = ['http://127.0.0.1',
-                       'https://127.0.0.1',
-                       'http://localhost',
-                       'https://localhost']
-    if 'COMMUTE_ALLOW_ORIGIN' in os.environ:
-        allowed_origins.append(os.environ['COMMUTE_ALLOW_ORIGIN'])
-    logging.info(allowed_origins)
-    allow_origin = ','.join([req_origin for x in allowed_origins if x in req_origin])
-    allow_origin = '*'
-
-    # header
-    header = {'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': allow_origin,
-              'Access-Control-Allow-Methods': 'POST'}
-    logging.info(header)
-
-    # fail early if unallowed origin
-    if not allow_origin:
-        result = {'statusCode': 403,
-                  'body': json.dumps({'status': 'ERROR',
-                                      'message': 'origin not allowed'}),
-                  'headers': header}
-        logging.info(result)
-        return result
-
     # database table name
     table_name = 'traffic'
 
+    # read headers
+    headers = dict((k.lower(), v) for k, v in event['headers'].iteritems())
+
+    # header
+    header = {'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': cors(headers['origin']),
+              'Access-Control-Allow-Methods': 'POST'}
+    logging.info(header)
+
+    # load data
+    if 'application/x-www-form-urlencoded' in headers['content-type'].lower():
+        data = dict(parse_qsl(event['body']))
+    else:
+        result = error('invalid content-type', header)
+        logging.info(result)
+        return result
+
     # setup vars from event
-    body = json.loads(event['body'])
-    origin = body['origin']
-    destination = body['destination']
+    origin = data['origin']
+    destination = data['destination']
     graph_name = '{0} -> {1}'.format(origin, destination)
     graph_type = 'area'
-    if 'name' in body:
-        graph_name = body['name']
-    if 'type' in body:
-        graph_type = body['type']
+    if 'name' in data:
+        graph_name = data['name']
+    if 'type' in data:
+        graph_type = data['type']
 
     # date range
     current_date = datetime.utcnow()
