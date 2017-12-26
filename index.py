@@ -21,7 +21,8 @@ try:
     SSM = boto3.client('ssm')
 
     PREFIX = '/commute'
-    PARAMS = SSM.get_parameters_by_path(Path=PREFIX, Recursive=True)
+    PARAMS = SSM.get_parameters_by_path(Path=PREFIX, Recursive=True,
+                                        WithDecryption=True)
     logging.debug('ssm: parameters(%s)', PARAMS)
 
     DATABASE = dict()
