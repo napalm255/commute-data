@@ -47,18 +47,22 @@ def handler(event, context):
     if 'COMMUTE_ALLOW_ORIGIN' in os.environ:
         allowed_origins.append(os.environ['COMMUTE_ALLOW_ORIGIN'])
     allow_origin = ','.join([req_origin for x in allowed_origins if x in req_origin])
+    logging.info(allowed_origins)
 
     # header
     header = {'Content-Type': 'application/json',
               'Access-Control-Allow-Origin': allow_origin,
               'Access-Control-Allow-Methods': 'POST'}
+    logging.info(header)
 
     # fail early if unallowed origin
     if not allow_origin:
-        return {'statusCode': 403,
-                'body': json.dumps({'status': 'ERROR',
-                                    'message': 'origin not allowed'}),
-                'headers': header}
+        result = {'statusCode': 403,
+                  'body': json.dumps({'status': 'ERROR',
+                                      'message': 'origin not allowed'}),
+                  'headers': header}
+        logging.info(result)
+        return result
 
     # database table name
     table_name = 'traffic'
@@ -90,7 +94,7 @@ def handler(event, context):
         logging.info(sql)
         cursor.execute(sql)
         recs = cursor.fetchall()
-        # logging.info(recs)
+        logging.info('number of records: %s', len(recs))
         results = {"x_axis": {'type': 'datetime'},
                    "series": [{'type': graph_type, 'name': graph_name, 'data': []}]}
         for rec in recs:
