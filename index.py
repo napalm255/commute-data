@@ -7,10 +7,10 @@ import logging
 import os
 import json
 import time
+from datetime import datetime, timedelta
 import pymysql
 from pymysql.cursors import DictCursor
 from pytz import timezone
-from datetime import datetime, timedelta
 
 
 try:
@@ -53,6 +53,12 @@ def handler(event, context):
     body = json.loads(event['body'])
     origin = body['origin']
     destination = body['destination']
+    graph_name = '{0} -> {1}'.format(origin, destination)
+    graph_type = 'area'
+    if 'name' in body:
+        graph_name = body['name']
+    if 'type' in body:
+        graph_type = body['type']
 
     current_date = datetime.utcnow()
     past_date = current_date + timedelta(-30)
@@ -70,12 +76,9 @@ def handler(event, context):
         recs = cursor.fetchall()
         logging.info(recs)
         results = {"x_axis": {'type': 'datetime'},
-                   "series": [{'name': '', 'data': []}]}
+                   "series": [{'type': graph_type, 'name': graph_name, 'data': []}]}
         for rec in recs:
-            results['series'][0]['name'] = '{0} -> {1}'.format(
-                rec['origin'], rec['destination'])
             value = int(rec['duration_in_traffic']) / 60
-            # timestamp = timezone('UTC').localize(rec['timestamp']).astimezone(timezone('EST'))
             timestamp = timezone('UTC').localize(rec['timestamp'])
             timestamp = float(time.mktime(timestamp.timetuple())) * 1000
             results['series'][0]['data'].append([timestamp, value])
