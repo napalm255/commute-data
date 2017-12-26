@@ -12,17 +12,34 @@ from urlparse import parse_qsl
 import pymysql
 from pymysql.cursors import DictCursor
 from pytz import timezone
+import boto3
 
 
 try:
-    DATA = {'db_host': os.environ['DATABASE_HOST'],
-            'db_user': os.environ['DATABASE_USER'],
-            'db_pass': os.environ['DATABASE_PASS'],
-            'db_name': os.environ['DATABASE_NAME']}
-    CONNECTION = pymysql.connect(host=DATA['db_host'],
-                                 user=DATA['db_user'],
-                                 password=DATA['db_pass'],
-                                 db=DATA['db_name'],
+    SSM = boto3.client('ssm')
+
+    DATABASE = {'host': SSM.get_parameter('commute_database_host')['Parameter']['Value'],
+                'user': SSM.get_parameter('commute_database_user')['Parameter']['Value'],
+                'pass': SSM.get_parameter('commute_database_pass')['Parameter']['Value'],
+                'name': SSM.get_parameter('commute_database_name')['Parameter']['Value']}
+
+    HEADER_PREFIX = 'commute_header_'
+    HEADER_PARAMS = SSM.describe_parameters(ParameterFilters=[{'Key': HEADER_PREFIX,
+                                                               'Option': 'BeginsWith'}])
+    HEADERS = dict()
+    for param in HEADER_PARAMS['Parameters']:
+        HEADERS.update((param.name.replace(HEADER_PREFIX, ''),
+                        SSM.get_parameter(param.name)['Parameter']['Value']))
+# pylint: disable=broad-except
+except Exception as ex:
+    logging.error('Unexpected error: could not connect to SSM. (%s)', ex)
+    sys.exit()
+
+try:
+    CONNECTION = pymysql.connect(host=DATABASE['host'],
+                                 user=DATABASE['user'],
+                                 password=DATABASE['pass'],
+                                 db=DATABASE['name'],
                                  autocommit=True,
                                  cursorclass=DictCursor)
     logging.info('Successfully connected to MySql.')
@@ -67,7 +84,8 @@ def handler(event, context):
     # pylint: disable=unused-argument, too-many-locals
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
-    logger.info('event: %s', event)
+    logging.info('event: %s', event)
+    logging.info(HEADERS)
 
     # database table name
     table_name = 'traffic'
