@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """Commute Traffic Data."""
+# pylint: disable=broad-except
 
 from __future__ import print_function
 import sys
@@ -27,6 +28,7 @@ try:
 
     DATABASE = dict()
     HEADERS = dict()
+    ROUTES = dict()
     for param in PARAMS['Parameters']:
         if '/database/' in param['Name']:
             key = param['Name'].replace('%s/database/' % PREFIX, '')
@@ -34,11 +36,16 @@ try:
         elif '/headers/' in param['Name']:
             key = param['Name'].replace('%s/headers/' % PREFIX, '')
             HEADERS.update({key: param['Value']})
+        elif '/config/routes' in param['Name']:
+            key = param['Name'].replace('%s/config/routes/' % PREFIX, '')
+            ROUTES.update({key: json.loads(param['Value'])})
     logging.debug('ssm: database(%s)', DATABASE)
     logging.debug('ssm: headers(%s)', HEADERS)
 
     logging.info('ssm: successfully gathered parameters')
-# pylint: disable=broad-except
+except ValueError as ex:
+    logging.error('ssm: could not convert json routes (%s)', ex)
+    sys.exit()
 except Exception as ex:
     logging.error('ssm: could not connect to SSM. (%s)', ex)
     sys.exit()
@@ -51,7 +58,6 @@ try:
                                  autocommit=True,
                                  cursorclass=DictCursor)
     logging.info('database: successfully connected to mysql')
-# pylint: disable=broad-except
 except Exception as ex:
     logging.error('database: could not connect to mysql (%s)', ex)
     sys.exit()
@@ -106,10 +112,11 @@ def handler(event, context):
 
     # setup vars from event
     try:
-        graph = {'org': data['origin'],
-                 'dst': data['destination'],
+        gid = ROUTES[data['id']]
+        graph = {'org': gid['origin'],
+                 'dst': gid['destination'],
                  'type': 'area',
-                 'name': '{0} -> {1}'.format(data['origin'], data['destination'])}
+                 'name': '{0} -> {1}'.format(gid['origin'], gid['destination'])}
         if 'name' in data:
             graph['name'] = data['name']
         if 'type' in data:
