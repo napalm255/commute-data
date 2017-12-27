@@ -139,17 +139,22 @@ def handler(event, context):
 
         cursor.execute(sql)
         recs = cursor.fetchall()
-        count = len(recs)
-        logging.info('database: %s records', count)
 
-        results = {"count": count,
+        results = {"stats": {"count": len(recs), "avg": 0.0, "min": 0.0, "max": 0.0},
                    "x_axis": {'type': 'datetime'},
                    "series": [{'type': graph['type'], 'name': graph['name'], 'data': []}]}
+        logging.info('database: stats (%s)', results)
+
+        values = list()
         for rec in recs:
             value = int(rec['duration_in_traffic']) / 60
             timestamp = timezone('UTC').localize(rec['timestamp'])
             timestamp = float(time.mktime(timestamp.timetuple())) * 1000
             results['series'][0]['data'].append([timestamp, value])
+            values.append(value)
+        results['min'] = float(min(values))
+        results['max'] = float(max(values))
+        results['avg'] = float(sum(values)) / float(len(values))
 
     return {'statusCode': 200,
             'body': json.dumps(results),
