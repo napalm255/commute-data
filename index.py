@@ -152,9 +152,9 @@ def handler(event, context):
             timestamp = float(time.mktime(timestamp.timetuple())) * 1000
             results['series'][0]['data'].append([timestamp, value])
             values.append(value)
-        results['min'] = float(min(values))
-        results['max'] = float(max(values))
-        results['avg'] = float(sum(values)) / float(len(values))
+        results['stats']['min'] = round(float(min(values)), 2)
+        results['stats']['max'] = round(float(max(values)), 2)
+        results['stats']['avg'] = round(float(sum(values)) / float(len(values)), 2)
 
     return {'statusCode': 200,
             'body': json.dumps(results),
