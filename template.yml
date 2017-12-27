@@ -9,36 +9,13 @@ Parameters:
     Type: String
     Description: CodeStar projectId used to associate new resources to team members
 
-# Database Connection Parameters from SSM
-# DatabaseHost:
-#   Type: 'AWS::SSM::Parameter::Value<String>'
-#   Description: Database host
-#   Default: commute_database_host
-# DatabaseUser:
-#   Type: 'AWS::SSM::Parameter::Value<String>'
-#   Description: Database user
-#   Default: commute_database_user
-# DatabasePass:
-#   Type: 'AWS::SSM::Parameter::Value<String>'
-#   Description: Database pass
-#   NoEcho: true
-#   Default: commute_database_pass
-# DatabaseName:
-#   Type: 'AWS::SSM::Parameter::Value<String>'
-#   Description: Database name
-#   Default: commute_database_name
-# AccessControlAllowOrigin:
-#   Type: 'AWS::SSM::Parameter::Value<String>'
-#   Description: Database name
-#   Default: commute_allow_origin
-
 Resources:
   TrafficData:
     Type: AWS::Serverless::Function
     Properties:
       Handler: index.handler
       Runtime: python2.7
-      Timeout: 10
+      Timeout: 5
       CodeUri: ./
       VpcConfig:
         SecurityGroupIds:
@@ -52,13 +29,6 @@ Resources:
         - AWSLambdaBasicExecutionRole
         - AWSLambdaVPCAccessExecutionRole
         - AmazonSSMReadOnlyAccess
-        # Environment:
-        #   Variables:
-        #     DATABASE_HOST: !Ref DatabaseHost
-        #     DATABASE_USER: !Ref DatabaseUser
-        #     DATABASE_PASS: !Ref DatabasePass
-        #     DATABASE_NAME: !Ref DatabaseName
-        #     COMMUTE_ALLOW_ORIGIN: !Ref AccessControlAllowOrigin
       Events:
         PostEvent:
           Type: Api
