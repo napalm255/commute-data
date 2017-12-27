@@ -49,6 +49,7 @@ Resources:
           - subnet-3980ae04
           - subnet-9c5315b6
       Policies:
+        - AWSLambdaBasicExecutionRole
         - AWSLambdaVPCAccessExecutionRole
         - AmazonSSMReadOnlyAccess
         # Environment:
