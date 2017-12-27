@@ -37,8 +37,7 @@ try:
             key = param['Name'].replace('%s/headers/' % PREFIX, '')
             HEADERS.update({key: param['Value']})
         elif '/config/routes' in param['Name']:
-            key = param['Name'].replace('%s/config/routes/' % PREFIX, '')
-            ROUTES.update({key: json.loads(param['Value'])})
+            ROUTES = json.loads(param['Value'])
     logging.debug('ssm: database(%s)', DATABASE)
     logging.debug('ssm: headers(%s)', HEADERS)
 
