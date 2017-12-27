@@ -98,9 +98,9 @@ def handler(event, context):
         header = dict(HEADERS)
         header.update({'Access-Control-Allow-Origin': cors(headers['origin'])})
         assert headers['origin'] == header['Access-Control-Allow-Origin']
-        logging.debug('header: %s', header)
+        logging.info('header: %s', header)
     except AssertionError:
-        return error('invalid origin')
+        return error('header: invalid origin')
 
     # load data
     try:
