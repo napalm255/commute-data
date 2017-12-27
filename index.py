@@ -40,7 +40,7 @@ try:
     logging.info('ssm: successfully gathered parameters')
 # pylint: disable=broad-except
 except Exception as ex:
-    logging.error('database: could not connect to SSM. (%s)', ex)
+    logging.error('ssm: could not connect to SSM. (%s)', ex)
     sys.exit()
 
 try:
