@@ -16,33 +16,37 @@ import boto3
 
 
 # logging configuration
-logging.getLogger().setLevel(logging.INFO)
+logging.getLogger().setLevel(logging.DEBUG)
 
 try:
     SSM = boto3.client('ssm')
 
     PREFIX = '/commute'
-    PARAMS = SSM.get_parameters_by_path(Path=PREFIX, Recursive=True,
-                                        WithDecryption=True)
+    PARAMS = dict()
+    for cat in ['database', 'headers', 'config']:
+        PARAMS[cat] = SSM.get_parameters_by_path(Path='%s/%s' % (PREFIX, cat),
+                                                 Recursive=True, WithDecryption=True)
     logging.debug('ssm: parameters(%s)', PARAMS)
 
     DATABASE = dict()
-    HEADERS = dict()
-    ROUTES = dict()
-    for param in PARAMS['Parameters']:
+    for param in PARAMS['database']['Parameters']:
         if '/database/' in param['Name']:
             key = param['Name'].replace('%s/database/' % PREFIX, '')
             DATABASE.update({key: param['Value']})
-        elif '/database/stats/' in param['Name']:
-            key = param['Name'].replace('%s/database/stats/' % PREFIX, '')
-            DATABASE.update({key: param['Value']})
-        elif '/headers/' in param['Name']:
+    logging.debug('ssm: database(%s)', DATABASE)
+
+    HEADERS = dict()
+    for param in PARAMS['headers']['Parameters']:
+        if '/headers/' in param['Name']:
             key = param['Name'].replace('%s/headers/' % PREFIX, '')
             HEADERS.update({key: param['Value']})
-        elif '/config/routes' in param['Name']:
+    logging.info('ssm: headers(%s)', HEADERS)
+
+    ROUTES = dict()
+    for param in PARAMS['config']['Parameters']:
+        if '/config/routes' in param['Name']:
             ROUTES = json.loads(param['Value'])
-    logging.debug('ssm: database(%s)', DATABASE)
-    logging.debug('ssm: headers(%s)', HEADERS)
+    logging.info('ssm: routes(%s)', ROUTES)
 
     logging.info('ssm: successfully gathered parameters')
 except ValueError as ex:
@@ -84,7 +88,7 @@ def cors(origin):
     if origin in HEADERS['Access-Control-Allow-Origin']:
         logging.debug('allow_origin: %s', origin)
         return origin
-    return '*'  # temp allow all
+    return ''
 
 
 def handler(event, context):
@@ -149,15 +153,17 @@ def handler(event, context):
         cursor.execute(sql)
         recs = cursor.fetchall()
 
-        results = {"stats": {"count": len(recs),
-                             "avg": 0.0,
-                             "min": 0.0,
-                             "max": 0.0}}
+        results = {"stats": {"count": len(recs), "avg": 0.0, "min": 0.0, "max": 0.0},
+                   "x_axis": {'type': 'datetime'},
+                   "series": [{'type': graph['type'], 'name': graph['name'], 'data': []}]}
         logging.info('database: stats (%s)', results)
 
         values = list()
         for rec in recs:
             value = int(rec['duration_in_traffic']) / 60
+            timestamp = timezone('UTC').localize(rec['timestamp'])
+            timestamp = float(time.mktime(timestamp.timetuple())) * 1000
+            results['series'][0]['data'].append([timestamp, value])
             values.append(value)
         results['stats']['min'] = min(values)
         results['stats']['max'] = max(values)

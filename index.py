@@ -22,24 +22,31 @@ try:
     SSM = boto3.client('ssm')
 
     PREFIX = '/commute'
-    PARAMS = SSM.get_parameters_by_path(Path=PREFIX, Recursive=True,
-                                        WithDecryption=True)
+    PARAMS = dict()
+    for cat in ['database', 'headers', 'config']:
+        PARAMS[cat] = SSM.get_parameters_by_path(Path='%s/%s' % (PREFIX, cat),
+                                                 Recursive=True, WithDecryption=True)
     logging.debug('ssm: parameters(%s)', PARAMS)
 
     DATABASE = dict()
-    HEADERS = dict()
-    ROUTES = dict()
-    for param in PARAMS['Parameters']:
+    for param in PARAMS['database']['Parameters']:
         if '/database/' in param['Name']:
             key = param['Name'].replace('%s/database/' % PREFIX, '')
             DATABASE.update({key: param['Value']})
-        elif '/headers/' in param['Name']:
+    logging.debug('ssm: database(%s)', DATABASE)
+
+    HEADERS = dict()
+    for param in PARAMS['headers']['Parameters']:
+        if '/headers/' in param['Name']:
             key = param['Name'].replace('%s/headers/' % PREFIX, '')
             HEADERS.update({key: param['Value']})
-        elif '/config/routes' in param['Name']:
-            ROUTES = json.loads(param['Value'])
-    logging.debug('ssm: database(%s)', DATABASE)
     logging.info('ssm: headers(%s)', HEADERS)
+
+    ROUTES = dict()
+    for param in PARAMS['config']['Parameters']:
+        if '/config/routes' in param['Name']:
+            ROUTES = json.loads(param['Value'])
+    logging.info('ssm: routes(%s)', ROUTES)
 
     logging.info('ssm: successfully gathered parameters')
 except ValueError as ex:
