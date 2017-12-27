@@ -15,7 +15,7 @@ import boto3
 
 
 # logging configuration
-logging.getLogger().setLevel(logging.DEBUG)
+logging.getLogger().setLevel(logging.INFO)
 
 try:
     SSM = boto3.client('ssm')
