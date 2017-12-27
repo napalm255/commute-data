@@ -33,6 +33,9 @@ try:
         if '/database/' in param['Name']:
             key = param['Name'].replace('%s/database/' % PREFIX, '')
             DATABASE.update({key: param['Value']})
+        elif '/database/stats/' in param['Name']:
+            key = param['Name'].replace('%s/database/stats/' % PREFIX, '')
+            DATABASE.update({key: param['Value']})
         elif '/headers/' in param['Name']:
             key = param['Name'].replace('%s/headers/' % PREFIX, '')
             HEADERS.update({key: param['Value']})
@@ -146,17 +149,15 @@ def handler(event, context):
         cursor.execute(sql)
         recs = cursor.fetchall()
 
-        results = {"stats": {"count": len(recs), "avg": 0.0, "min": 0.0, "max": 0.0},
-                   "x_axis": {'type': 'datetime'},
-                   "series": [{'type': graph['type'], 'name': graph['name'], 'data': []}]}
+        results = {"stats": {"count": len(recs),
+                             "avg": 0.0,
+                             "min": 0.0,
+                             "max": 0.0}}
         logging.info('database: stats (%s)', results)
 
         values = list()
         for rec in recs:
             value = int(rec['duration_in_traffic']) / 60
-            timestamp = timezone('UTC').localize(rec['timestamp'])
-            timestamp = float(time.mktime(timestamp.timetuple())) * 1000
-            results['series'][0]['data'].append([timestamp, value])
             values.append(value)
         results['stats']['min'] = min(values)
         results['stats']['max'] = max(values)
