@@ -139,9 +139,11 @@ def handler(event, context):
 
         cursor.execute(sql)
         recs = cursor.fetchall()
-        logging.info('database: #%s records', len(recs))
+        count = len(recs)
+        logging.info('database: %s records', count)
 
-        results = {"x_axis": {'type': 'datetime'},
+        results = {"count": count,
+                   "x_axis": {'type': 'datetime'},
                    "series": [{'type': graph['type'], 'name': graph['name'], 'data': []}]}
         for rec in recs:
             value = int(rec['duration_in_traffic']) / 60
