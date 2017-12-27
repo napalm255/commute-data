@@ -16,7 +16,7 @@ import boto3
 
 
 # logging configuration
-logging.getLogger().setLevel(logging.INFO)
+logging.getLogger().setLevel(logging.DEBUG)
 
 try:
     SSM = boto3.client('ssm')
@@ -39,7 +39,7 @@ try:
         elif '/config/routes' in param['Name']:
             ROUTES = json.loads(param['Value'])
     logging.debug('ssm: database(%s)', DATABASE)
-    logging.debug('ssm: headers(%s)', HEADERS)
+    logging.info('ssm: headers(%s)', HEADERS)
 
     logging.info('ssm: successfully gathered parameters')
 except ValueError as ex:
@@ -81,7 +81,7 @@ def cors(origin):
     if origin in HEADERS['Access-Control-Allow-Origin']:
         logging.debug('allow_origin: %s', origin)
         return origin
-    return '*'  # temp allow all
+    return ''
 
 
 def handler(event, context):
