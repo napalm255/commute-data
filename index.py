@@ -158,13 +158,11 @@ def handler(event, context):
                    "series": [{'type': graph['type'], 'name': graph['name'], 'data': []}]}
         logging.info('database: stats (%s)', results)
 
-        values = list()
         for rec in recs:
             value = round(int(rec['duration_in_traffic']) / 60)
             timestamp = timezone('UTC').localize(rec['timestamp'])
             timestamp = float(time.mktime(timestamp.timetuple())) * 1000
             results['series'][0]['data'].append([timestamp, value])
-            values.append(value)
 
     return {'statusCode': 200,
             'body': json.dumps(results),
