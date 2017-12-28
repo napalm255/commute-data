@@ -6,12 +6,9 @@ from __future__ import print_function
 import sys
 import logging
 import json
-import time
-from datetime import datetime, timedelta
 from urllib.parse import parse_qsl
 import pymysql
 from pymysql.cursors import DictCursor
-from pytz import timezone
 import boto3
 
 
