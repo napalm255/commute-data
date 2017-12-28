@@ -97,7 +97,7 @@ def handler(event, context):
     logging.info('event: %s', event)
 
     # read event headers
-    headers = dict((k.lower(), v) for k, v in event['headers'].iteritems())
+    headers = dict((k.lower(), v) for k, v in event['headers'].items())
 
     # header + cors
     try:
