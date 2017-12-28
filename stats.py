@@ -8,7 +8,7 @@ import logging
 import json
 import time
 from datetime import datetime, timedelta
-from urlparse import parse_qsl
+from urllib.parse import parse_qsl
 import pymysql
 from pymysql.cursors import DictCursor
 from pytz import timezone
