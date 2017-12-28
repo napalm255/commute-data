@@ -146,7 +146,7 @@ def handler(event, context):
 
         values = list()
         for rec in recs:
-            value = round(int(rec['harmonic_mean']) / 60)
+            value = round(int(rec['s_harmonic_mean']) / 60)
             timestamp = '%s-%s-%s' % (rec['year'], rec['month'], rec['day'])
             results['series'][0]['data'].append([timestamp, value])
             values.append(value)
