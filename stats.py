@@ -132,42 +132,27 @@ def handler(event, context):
         message = 'invalid arguments (%s)' % ex
         return error(message, header)
 
-    # date range
-    dates = dict()
-    dates['current'] = datetime.utcnow()
-    dates['past'] = dates['current'] + timedelta(-365)
-    dates['start'] = dates['past'].strftime('%Y-%m-%d 00:00:00')
-    dates['end'] = dates['current'].strftime('%Y-%m-%d %H:%M:%S')
-    logging.debug('dates: %s', dates)
-
     # get data
     with CONNECTION.cursor() as cursor:
         logging.info('database: query')
-        sql = ('select origin, destination, timestamp, duration_in_traffic from %s'
-               ' where origin = "%s" and destination = "%s"'
-               ' and timestamp between "%s" and "%s"') % (DATABASE['table'],
-                                                          graph['org'], graph['dst'],
-                                                          dates['start'], dates['end'])
+        sql = ('select * from %s'
+               ' where origin = "%s" and'
+               ' destination = "%s"') % (DATABASE['table'], graph['org'], graph['dst'])
         logging.debug('database: sql(%s)', sql)
 
         cursor.execute(sql)
         recs = cursor.fetchall()
 
-        results = {"stats": {"count": len(recs), "avg": 0.0, "min": 0.0, "max": 0.0},
-                   "x_axis": {'type': 'datetime'},
+        results = {"stats": {"count": len(recs)},
                    "series": [{'type': graph['type'], 'name': graph['name'], 'data': []}]}
         logging.info('database: stats (%s)', results)
 
         values = list()
         for rec in recs:
-            value = int(rec['duration_in_traffic']) / 60
-            timestamp = timezone('UTC').localize(rec['timestamp'])
-            timestamp = float(time.mktime(timestamp.timetuple())) * 1000
+            value = round(int(rec['harmonic_mean']) / 60)
+            timestamp = '%s-%s-%s' % (rec['year'], rec['month'], rec['day'])
             results['series'][0]['data'].append([timestamp, value])
             values.append(value)
-        results['stats']['min'] = min(values)
-        results['stats']['max'] = max(values)
-        results['stats']['avg'] = int(round(float(sum(values)) / float(len(values))))
 
     return {'statusCode': 200,
             'body': json.dumps(results),
