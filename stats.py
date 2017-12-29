@@ -120,7 +120,7 @@ def handler(event, context):
         if 'fields' in graph:
             graph['fields'] = ['s_%s' % x for x in list(graph['fields'].split(','))]
         if 'name' not in graph:
-            graph['name'] = '{0} -> {1}'.format(gid['origin'], gid['destination'])
+            graph['name'] = '{0} -> {1}'.format(graph['origin'], graph['destination'])
         if 'type' not in graph:
             graph['type'] = 'area'
         logging.debug('graph data: %s', graph)
@@ -156,5 +156,5 @@ def handler(event, context):
 
 if __name__ == '__main__':
     with open('test.json') as json_file:
-        data = json.load(json_file)
-    print(handler(data, None))
+        DATA = json.load(json_file)
+    print(handler(DATA, None))
