@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """Commute Traffic Data."""
 # pylint: disable=broad-except
 
@@ -115,15 +115,14 @@ def handler(event, context):
 
     # setup vars from event
     try:
-        gid = ROUTES[data['id']]
-        graph = {'org': gid['origin'],
-                 'dst': gid['destination'],
-                 'type': 'area',
-                 'name': '{0} -> {1}'.format(gid['origin'], gid['destination'])}
-        if 'name' in data:
-            graph['name'] = data['name']
-        if 'type' in data:
-            graph['type'] = data['type']
+        graph = dict(ROUTES[data['id']])
+        graph.update(data)
+        if 'fields' in graph:
+            graph['fields'] = ['s_%s' % x for x in list(graph['fields'].split(','))]
+        if 'name' not in graph:
+            graph['name'] = '{0} -> {1}'.format(gid['origin'], gid['destination'])
+        if 'type' not in graph:
+            graph['type'] = 'area'
         logging.debug('graph data: %s', graph)
     except KeyError as ex:
         message = 'invalid arguments (%s)' % ex
@@ -132,9 +131,9 @@ def handler(event, context):
     # get data
     with CONNECTION.cursor() as cursor:
         logging.info('database: query')
-        sql = ('select * from %s'
-               ' where origin = "%s" and'
-               ' destination = "%s"') % (DATABASE['table'], graph['org'], graph['dst'])
+        sql = ('select * from %s where s_origin = "%s" and'
+               ' s_destination = "%s"') % (DATABASE['stats/table'],
+                                           graph['origin'], graph['destination'])
         logging.debug('database: sql(%s)', sql)
 
         cursor.execute(sql)
@@ -144,12 +143,11 @@ def handler(event, context):
                    "series": [{'type': graph['type'], 'name': graph['name'], 'data': []}]}
         logging.info('database: stats (%s)', results)
 
-        values = list()
         for rec in recs:
-            value = round(int(rec['s_harmonic_mean']) / 60)
-            timestamp = '%s-%s-%s' % (rec['year'], rec['month'], rec['day'])
-            results['series'][0]['data'].append([timestamp, value])
-            values.append(value)
+            record = list()
+            for field in graph['fields']:
+                record.append(rec[field])
+            results['series'][0]['data'].append(record)
 
     return {'statusCode': 200,
             'body': json.dumps(results),
@@ -157,4 +155,6 @@ def handler(event, context):
 
 
 if __name__ == '__main__':
-    print(handler({}, None))
+    with open('test.json') as json_file:
+        data = json.load(json_file)
+    print(handler(data, None))
