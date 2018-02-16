@@ -15,7 +15,7 @@ Resources:
     Properties:
       Handler: index.handler
       Runtime: python3.6
-      Timeout: 5
+      Timeout: 15
       CodeUri: ./
       VpcConfig:
         SecurityGroupIds:
@@ -41,7 +41,7 @@ Resources:
     Properties:
       Handler: stats.handler
       Runtime: python3.6
-      Timeout: 5
+      Timeout: 15
       CodeUri: ./
       VpcConfig:
         SecurityGroupIds:
